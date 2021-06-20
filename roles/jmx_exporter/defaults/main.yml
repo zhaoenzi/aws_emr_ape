@@ -1,0 +1,12 @@
+---
+jmx_exporter_version: 0.15.0
+jmx_exporter_signature: "jmx_prometheus_javaagent-{{ jmx_exporter_version }}.jar"
+jmx_exporter_repository_url: "https://repo1.maven.org/maven2"
+jmx_exporter_jar_local_dir: ""
+jmx_nn_prometheus_port: 7005
+jmx_dn_prometheus_port: 7006
+jmx_rm_prometheus_port: 7007
+jmx_nm_prometheus_port: 7008
+
+# Internal variables
+_jmx_exporter_jar_install_dir: "/usr/lib/jmx"

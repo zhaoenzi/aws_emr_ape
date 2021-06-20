@@ -1,0 +1,38 @@
+---
+- block:
+    - name: Create jmx_exporter jar directory
+      file:
+        path: "{{ _jmx_exporter_jar_install_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: u+rwX,g+rwX,o=rX
+    - name: Download jmx_exporter jar to local folder
+      become: false
+      get_url:
+        url: "{{ jmx_exporter_repository_url }}/io/prometheus/jmx/jmx_prometheus_javaagent/{{ jmx_exporter_version }}/{{ jmx_exporter_signature }}"
+        dest: "/tmp/{{ jmx_exporter_signature }}"
+      register: _download_jar
+      until: _download_jar is succeeded
+      retries: 5
+      delay: 2
+      delegate_to: localhost
+      check_mode: false
+    - name: Propagate jmx_exporter binaries
+      copy:
+        src: "/tmp/{{ jmx_exporter_signature }}"
+        dest: "{{ _jmx_exporter_jar_install_dir }}/{{ jmx_exporter_signature }}"
+        mode: 0755
+        owner: root
+        group: root
+      when: not ansible_check_mode
+  when: jmx_exporter_jar_local_dir | length == 0
+
+- name: Propagate locally distributed jmx_exporter binary
+  copy:
+    src: "{{ jmx_exporter_jar_local_dir }}/{{ jmx_exporter_signature }}"
+    dest: "{{ _jmx_exporter_jar_install_dir }}/{{ jmx_exporter_signature }}"
+    mode: 0755
+    owner: root
+    group: root
+  when: jmx_exporter_jar_local_dir | length > 0

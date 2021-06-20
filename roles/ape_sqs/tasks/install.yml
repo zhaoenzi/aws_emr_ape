@@ -1,0 +1,43 @@
+---
+- name: Create the ape_sqs group
+  group:
+    name: "{{ _ape_service_system_group }}"
+    state: present
+    system: true
+  when: _ape_service_system_user != "root"
+
+- name: Create the ape_sqs user
+  user:
+    name: "{{ _ape_service_system_user }}"
+    groups: "{{ _ape_service_system_group }}"
+    append: true
+    shell: /usr/sbin/nologin
+    system: true
+    create_home: false
+    home: /
+  when: _ape_service_system_user != "root"
+
+- block:
+    - name: Install python3
+      become: true
+      yum:
+        name: python3
+        state: present
+    - name: create ape_venv
+      become: true
+      shell: "/usr/bin/python3 -m venv {{ _ape_venv_dir }}/{{_ape_venv_name}}"
+    - name: Install  boto3
+      pip:
+        name: boto3
+        virtualenv: "{{ _ape_venv_dir }}/{{_ape_venv_name}}"
+        virtualenv_site_packages: yes
+    - name: Install ansible
+      pip:
+        name: ansible
+        virtualenv: "{{ _ape_venv_dir }}/{{_ape_venv_name}}"
+        virtualenv_site_packages: yes
+    - name: Install ansible
+      pip:
+        name: requests
+        virtualenv: "{{ _ape_venv_dir }}/{{_ape_venv_name}}"
+        virtualenv_site_packages: yes

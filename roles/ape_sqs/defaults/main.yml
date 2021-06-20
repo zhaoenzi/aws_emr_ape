@@ -1,0 +1,8 @@
+---
+ape_sqs_lib_dir: "/var/lib/ape_sqs"
+
+# Internal variables
+_ape_venv_dir: "/usr/local/venv"
+_ape_venv_name: "ape-venv"
+_ape_service_system_group: "root"
+_ape_service_system_user: "{{ _ape_service_system_group }}"

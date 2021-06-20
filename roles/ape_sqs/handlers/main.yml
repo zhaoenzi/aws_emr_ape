@@ -1,0 +1,10 @@
+---
+- name: restart ape_sqs
+  become: true
+  systemd:
+    daemon_reload: true
+    name: ape_sqs
+    state: restarted
+  when:
+    - not ansible_check_mode
+

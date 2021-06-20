@@ -1,0 +1,22 @@
+{{ ansible_managed | comment }}
+
+[Unit]
+Description=ape sqs service
+After=network-online.target
+
+[Service]
+WorkingDirectory={{ project_path }}
+Type=simple
+User={{ _ape_service_system_user }}
+Group={{ _ape_service_system_group }}
+ExecStart={{ _ape_venv_dir }}/{{_ape_venv_name}}/bin/python {{ape_sqs_lib_dir}}/sqs_task.py {{ meta_json_file }} {{private_key_path}} \
+
+SyslogIdentifier=ape_sqs
+Restart=always
+RestartSec=1
+StartLimitInterval=3
+Environment=PYTHONUNBUFFERED=1
+
+
+[Install]
+WantedBy=multi-user.target

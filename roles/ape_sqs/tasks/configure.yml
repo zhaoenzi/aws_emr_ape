@@ -1,0 +1,26 @@
+- name: Copy the ape_sqs systemd service file
+  template:
+    src: ape_sqs.service.j2
+    dest: /etc/systemd/system/ape_sqs.service
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart ape_sqs
+
+- block:
+    - name: Create ape_sqs lib directory
+      file:
+        path: "{{ape_sqs_lib_dir}}"
+        state: directory
+        owner: root
+        group: root
+        mode: u+rwX,g+rwX,o=rX
+
+    - name: Copy the ape_sqs lib file
+      copy:
+        src: sqs_task.py
+        dest: "{{ape_sqs_lib_dir}}/sqs_task.py"
+        owner: root
+        group: root
+        mode: 0755
+      notify:  restart ape_sqs

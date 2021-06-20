@@ -1,0 +1,86 @@
+---
+- import_tasks: preflight.yml
+  tags:
+    - jmx_exporter_install
+    - jmx_exporter_configure
+
+- import_tasks: install.yml
+  become: true
+  when:
+    ( not __jmx_exporter_is_installed.stat.exists ) or
+    ( __jmx_exporter_current_version_output.stdout !=  jmx_exporter_version ) or
+    ( jmx_exporter_jar_local_dir | length > 0 )
+  tags:
+    - jmx_exporter_install
+
+- import_tasks: configure.yml
+  become: true
+  tags:
+    - jmx_exporter_configure
+
+- name: check instance jmx run
+  shell: "ps aux|grep {{ item }}|grep jmx_prometheus_javaagent| grep -v grep|cat"
+  become: true
+  register: __instance_jmx_run
+  ignore_errors: true
+  with_items:
+    - "NameNode"
+    - "DataNode"
+    - "ResourceManager"
+    - "NodeManager"
+  tags:
+    - instance_jmx_run
+
+- name: tag nn instance
+  become: true
+  shell: |
+     EC2_INSTANCE_ID=`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`
+     EC2_AVAIL_ZONE=`wget -q -O - http://169.254.169.254/latest/meta-data/placement/availability-zone`
+     EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+     /usr/bin/aws ec2 create-tags --region $EC2_REGION --resources $EC2_INSTANCE_ID --tags Key=jmx_exporter_nn,Value=installed
+  when:
+    - not ansible_check_mode
+    - __instance_jmx_run.results[0].stdout != ""
+
+
+- name: tag dn instance
+  become: true
+  shell: |
+     EC2_INSTANCE_ID=`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`
+     EC2_AVAIL_ZONE=`wget -q -O - http://169.254.169.254/latest/meta-data/placement/availability-zone`
+     EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+     /usr/bin/aws ec2 create-tags --region $EC2_REGION --resources $EC2_INSTANCE_ID --tags Key=jmx_exporter_dn,Value=installed
+  when:
+    - not ansible_check_mode
+    - __instance_jmx_run.results[1].stdout != ""
+
+- name: tag rm instance
+  become: true
+  shell: |
+     EC2_INSTANCE_ID=`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`
+     EC2_AVAIL_ZONE=`wget -q -O - http://169.254.169.254/latest/meta-data/placement/availability-zone`
+     EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+     /usr/bin/aws ec2 create-tags --region $EC2_REGION --resources $EC2_INSTANCE_ID --tags Key=jmx_exporter_rm,Value=installed
+  when:
+    - not ansible_check_mode
+    - __instance_jmx_run.results[2].stdout != ""
+
+- name: tag nm instance
+  become: true
+  shell: |
+     EC2_INSTANCE_ID=`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`
+     EC2_AVAIL_ZONE=`wget -q -O - http://169.254.169.254/latest/meta-data/placement/availability-zone`
+     EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+     /usr/bin/aws ec2 create-tags --region $EC2_REGION --resources $EC2_INSTANCE_ID --tags Key=jmx_exporter_nm,Value=installed
+  when:
+    - not ansible_check_mode
+    - __instance_jmx_run.results[3].stdout != ""
+
+- name: jmx installed and update prometheus_scrape_url
+  become: true
+  connection: local
+  shell: "{{ python_venv_execute }} {{update_scrape_script}} {{ meta_json_file }} {{ deploy_cluster_id }} "
+  register: __jmx_scrapy_update
+  when:
+   - not ansible_check_mode
+- debug: var=__jmx_scrapy_update

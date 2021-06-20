@@ -1,0 +1,24 @@
+{
+  "base": [
+    {
+      "cluster_id": "j-2Z16PYH1GWCDM",
+      "cluster_name": "test-monitor-005",
+      "ssh_user": "hadoop",
+      "private_key": "emr-key.pem",
+      "ip_type": "PrivateIpAddress",
+      "prometheus_sd_dir": "",
+      "consul_address": "http://localhost:8500/v1/agent/service/register"
+    },
+    {
+      "cluster_id": "j-test",
+      "cluster_name": "test-monitor-008",
+      "ssh_user": "hadoop",
+      "private_key": "emr-key.pem",
+      "ip_type": "PrivateIpAddress",
+      "prometheus_sd_dir": "",
+      "consul_address": "http://localhost:8500/v1/agent/service/register"
+    }
+  ],
+  "aws_region": "ap-southeast-1",
+  "sqs_queue_name": "emr-state-queue.fifo"
+}

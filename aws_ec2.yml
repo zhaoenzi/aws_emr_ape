@@ -1,0 +1,41 @@
+# aws_ec2.yml
+plugin: aws_ec2
+# aws
+regions:
+  - ap-southeast-1
+filters:
+  tag:aws:elasticmapreduce:job-flow-id:
+    - '*'
+
+strict_permissions: False
+# exclude Instance
+#exclude_filters:
+#- tag:node_exporter:
+#  - 'installed'
+#- tag:jmx_exporter:
+#  - '*'
+
+# groups
+keyed_groups:
+  - key: tags['aws:elasticmapreduce:job-flow-id'],tags['aws:elasticmapreduce:instance-group-role']
+    prefix: emr-flow-role
+
+
+# hostnames
+hostnames:
+  - tag:Name
+  - private-ip-address
+  - ip-address
+  - dns-name
+
+
+# set var
+compose:
+  ansible_host: private_ip_address
+
+# cache
+cache: false
+cache_plugin: jsonfile
+cache_prefix: aws-ec2
+cache_timeout: 7200
+cache_connection: /tmp/aws_inventory

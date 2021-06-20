@@ -1,0 +1,42 @@
+---
+- name: validate deploy_cluster_id variables
+  fail:
+    msg: "Required variable  deploy_cluster_id has not been provided"
+  when: deploy_cluster_id is undefined
+
+- name: Assert usage of systemd as an init system
+  assert:
+    that: ansible_service_mgr == 'systemd'
+    msg: "This role only works with systemd"
+
+- name: Get systemd version
+  command: systemctl --version
+  changed_when: false
+  check_mode: false
+  register: __systemd_version
+  tags:
+    - skip_ansible_lint
+
+- name: Set systemd version fact
+  set_fact:
+    jmx_exporter_systemd_version: "{{ __systemd_version.stdout_lines[0] | regex_replace('^systemd\\s(\\d+).*$', '\\1') }}"
+
+- name: Check if jmx_exporter is installed
+  stat:
+    path: "{{ _jmx_exporter_jar_install_dir }}/{{ jmx_exporter_signature }}"
+  register: __jmx_exporter_is_installed
+  check_mode: false
+  tags:
+    - jmx_exporter_install
+
+- name: Gather currently installed jmx_exporter version
+  shell: "ls {{ _jmx_exporter_jar_install_dir }}|cut -d'-' -f2 |cut -d'j' -f1|sed 's/.$//g'"
+  changed_when: false
+  register: __jmx_exporter_current_version_output
+  check_mode: false
+  when: __jmx_exporter_is_installed.stat.exists
+  tags:
+    - jmx_exporter_install
+    - skip_ansible_lint
+#- debug: var=__jmx_exporter_is_installed
+#- debug: var=__jmx_exporter_current_version_output

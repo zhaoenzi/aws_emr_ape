@@ -1,0 +1,106 @@
+---
+- block:
+    - name: Create jmx_exporter config directory
+      file:
+        path: "/etc/jmx_exporter"
+        state: directory
+        owner: root
+        group: root
+        mode: u+rwX,g+rwX,o=rX
+    - name: get instance hadoop run process
+      shell: "ps aux|grep {{ item }}| grep -v grep|cat"
+      register: __instance_hadoop_run
+      ignore_errors: true
+      with_items:
+        - "NameNode"
+        - "DataNode"
+        - "ResourceManager"
+        - "NodeManager"
+      tags:
+        - instance_hadoop_run
+    - debug: var=__instance_hadoop_run
+
+    - name: Copy the namenode jmx config file
+      template:
+        src: hdfs_nn_jmx_config.yaml.j2
+        dest: /etc/jmx_exporter/hdfs_nn_jmx_config.yaml
+        owner: root
+        group: root
+        mode: 0644
+      register: nn_jmx_conf
+      when: __instance_hadoop_run.results[0].stdout != ""
+#    - debug: var=nn_jmx_conf
+
+    - name: Copy the datanode jmx config file
+      template:
+        src: hdfs_dn_jmx_config.yaml.j2
+        dest: /etc/jmx_exporter/hdfs_dn_jmx_config.yaml
+        owner: root
+        group: root
+        mode: 0644
+      register: dn_jmx_conf
+      when: __instance_hadoop_run.results[1].stdout != ""
+#    - debug: var=dn_jmx_conf
+    - name: Copy the resourcemanager jmx config file
+      template:
+        src: yarn_rm_jmx_config.yaml.j2
+        dest: /etc/jmx_exporter/yarn_rm_jmx_config.yaml
+        owner: root
+        group: root
+        mode: 0644
+      register: rm_jmx_conf
+      when: __instance_hadoop_run.results[2].stdout != ""
+
+    - name: Copy the nodemanager jmx config file
+      template:
+        src: yarn_nm_jmx_config.yaml.j2
+        dest: /etc/jmx_exporter/yarn_nm_jmx_config.yaml
+        owner: root
+        group: root
+        mode: 0644
+      register: nm_jmx_conf
+      when: __instance_hadoop_run.results[3].stdout != ""
+
+- name: add java opts to namenode
+  blockinfile:
+    path: /etc/hadoop/conf/hadoop-env.sh
+    marker: "#{mark} ANSIBLE MANAGED BLOCK NAMENODE"
+    block: |
+      export HDFS_NAMENODE_OPTS=" -javaagent:{{ _jmx_exporter_jar_install_dir }}/{{ jmx_exporter_signature }}={{jmx_nn_prometheus_port}}:/etc/jmx_exporter/hdfs_nn_jmx_config.yaml"
+  notify:
+    - restart namenode
+#  changed_when: true
+  when: "'skipped' not in nn_jmx_conf or force_export_opt_nn"
+
+- name: add java opts to datanode
+  blockinfile:
+    path: /etc/hadoop/conf/hadoop-env.sh
+    marker: "#{mark} ANSIBLE MANAGED BLOCK DATANODE"
+    block: |
+      export HADOOP_DATANODE_OPTS=" -javaagent:{{ _jmx_exporter_jar_install_dir }}/{{ jmx_exporter_signature }}={{jmx_dn_prometheus_port}}:/etc/jmx_exporter/hdfs_dn_jmx_config.yaml"
+  notify:
+    - restart datanode
+#  changed_when: true
+  when: "'skipped' not in dn_jmx_conf or force_export_opt_dn"
+
+- name: add java opts to resourcemanager
+  blockinfile:
+    path: /etc/hadoop/conf/yarn-env.sh
+    marker: "#{mark} ANSIBLE MANAGED BLOCK REOSURCEMANAGER"
+    block: |
+      export YARN_RESOURCEMANAGER_OPTS=" -javaagent:{{ _jmx_exporter_jar_install_dir }}/{{ jmx_exporter_signature }}={{jmx_rm_prometheus_port}}:/etc/jmx_exporter/yarn_rm_jmx_config.yaml"
+  notify:
+    - restart resourcemanager
+#  changed_when: true
+  when:  "'skipped' not in rm_jmx_conf or force_export_opt_rm "
+
+- name: add java opts to nodemanager
+  blockinfile:
+    path: /etc/hadoop/conf/yarn-env.sh
+    marker: "#{mark} ANSIBLE MANAGED BLOCK NODEMANAGER"
+    block: |
+      export YARN_NODEMANAGER_OPTS=" -javaagent:{{ _jmx_exporter_jar_install_dir }}/{{ jmx_exporter_signature }}={{jmx_nm_prometheus_port}}:/etc/jmx_exporter/yarn_nm_jmx_config.yaml"
+  notify:
+    - restart nodemanager
+#  changed_when: true
+  when: "'skipped' not in nm_jmx_conf or  force_export_opt_nm"

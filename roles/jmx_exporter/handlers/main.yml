@@ -1,0 +1,76 @@
+---
+- name: restart namenode
+  become: true
+  systemd:
+    daemon_reload: true
+    name: hadoop-hdfs-namenode
+    state: restarted
+  when:
+    - not ansible_check_mode
+
+- name: Wait for namenode port 8020
+  wait_for:
+    port: 8020
+    delay: 10
+    sleep: 3
+    timeout: 300
+  listen: restart namenode
+  when:
+    - not ansible_check_mode
+
+- name: restart datanode
+  become: true
+  systemd:
+    daemon_reload: true
+    name: hadoop-hdfs-datanode
+    state: restarted
+  when:
+    - not ansible_check_mode
+
+- name: Wait for datanode port 50010
+  wait_for:
+    port: 50010
+    delay: 10
+    sleep: 3
+    timeout: 60
+  listen: restart datanode
+  when:
+    - not ansible_check_mode
+
+- name: restart resourcemanager
+  become: true
+  systemd:
+    daemon_reload: true
+    name: hadoop-yarn-resourcemanager
+    state: restarted
+  when:
+    - not ansible_check_mode
+
+- name: Wait for resourcemanager port 8032
+  wait_for:
+    port: 8032
+    delay: 10
+    sleep: 3
+    timeout: 60
+  listen: restart resourcemanager
+  when:
+    - not ansible_check_mode
+
+- name: restart nodemanager
+  become: true
+  systemd:
+    daemon_reload: true
+    name: hadoop-yarn-nodemanager
+    state: restarted
+  when:
+    - not ansible_check_mode
+
+- name: Wait for nodemanager port 8041
+  wait_for:
+    port: 8041
+    delay: 10
+    sleep: 3
+    timeout: 60
+  listen: restart nodemanager
+  when:
+    - not ansible_check_mode

@@ -1,0 +1,52 @@
+#- hosts: all
+#  gather_facts: no
+#  vars_prompt:
+#    - name: "host"
+#      prompt: "please enter the target hostname from:  {{ groups }}"
+#      private: no
+#  tasks:
+#    - add_host:
+#        name: "{{ host }}"
+#        groups: chosen_host
+#- name: Ping Host
+#  hosts: all
+#  gather_facts: false
+##  remote_user: hadoop
+#  tags:
+#    - ping
+#  tasks:
+#  - name: Pinging Host
+#    ping:
+- name: Deploy node_exporter
+  hosts: all
+  roles:
+    - node_exporter
+  vars:
+    python_venv_execute: "/usr/local/venv/ape-venv/bin/python"
+    update_scrape_script: "{{ lookup('env', 'PWD') }}/reg_sd.py"
+    node_exporter_version: 1.1.1
+    meta_json_file: "{{ lookup('env', 'PWD') }}/meta.json"
+    deploy_cluster_id: "{{ deploy_cluster_id }}"
+  tags:
+    - node_exporter
+
+- name: Deploy jmx_exporter
+  hosts: all
+  serial: 1
+  vars:
+    jmx_exporter_version: 0.15.0
+    force_export_opt_nn: false
+    force_export_opt_dn: false
+    force_export_opt_rm: false
+    force_export_opt_nm: false
+    python_venv_execute: "/usr/local/venv/ape-venv/bin/python"
+    update_scrape_script: "{{ lookup('env', 'PWD') }}/reg_sd.py"
+    meta_json_file: "{{ lookup('env', 'PWD') }}/meta.json"
+    deploy_cluster_id: "{{ deploy_cluster_id }}"
+    re_tag: true
+  roles:
+    - jmx_exporter
+  tags:
+    - jmx_exporter
+
+
