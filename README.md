@@ -1,5 +1,7 @@
 # ansible-prometheus-exporter
 
+来自AWS大神超哥的解决方案，存储仅供自己学习！
+
 [toc]
 
 ### 更新记录
